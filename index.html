@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TV Website</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<!-- used for turn on and off transitions -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script>
+<body>
+    <div class="container unselectable">
+        <img class="television unselectable" src="tv_frame.png">
+        <div class="screen">
+            <img id="video-gif" src="static.gif">
+            <div id="white-screen"></div>
+        </div>
+        <img id="off-screen" src="off_screen.png">
+        <div id="on-off">
+        </div>
+    </div>
+</body>
+<script>
+    // Add a list of video/gif URLs
+    var videos = [
+        ["static.gif", 1.5],
+        ["https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNmMyMDA4MzA4ZmFhZTE4N2I2ODFlZTZmM2M2YmJiZWM3OTZkMmYxOSZjdD1n/L5bzJhuUjQEFyVPMhw/giphy-downsized-large.gif", 10],
+        ["static.gif", 1.5],
+        ["https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExZTNhYWMxNjhmMTlmOWEyMWNmNzc1ODk0ZTFmMDIzZTZlNWUxN2UxYSZjdD1n/h7vzlXm6jeTQ5BKd9N/giphy.gif", 30],
+        ["static.gif", 1.5],
+        ["voyage_of_life.gif", 30],
+        ["static.gif", 1.5],
+        ["https://farm3.static.flickr.com/2763/4066619248_4582cac223_o.gif", 7],
+        ["static.gif", 1.5],
+        ["https://lh3.googleusercontent.com/u/0/drive-viewer/AAOQEOR4t4oNisWYynUx7CntrxyRn-y4u6N7W2-VrTweb0C_HLsPSe-xSgAe0mZb3rXARafBBiwNuzqVWLOwHUvvEGXJAZza=w1294-h1666", 9],
+        ["static.gif", 1.5],
+        ["https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNTE5NTAyODliYjJlYzZlODY3NmE1ZmM2ZGU4NDVjZWM5OTMwNzMyZSZjdD1n/V08bdIQVkKXSKvBhLL/giphy.gif", 7]
+        // ... add more URLs here
+    ];
+
+    // Function to preload a single video
+    function preloadVideo([url, duration]) {
+        const video = document.createElement('video');
+        video.src = url;
+    }
+    videos.forEach((url) => preloadVideo(url));
+
+    // Keep track of the current video/gif index
+    var currentVideoIndex = -1;
+    var timerID;
+    const static = new Audio("https://cdn.freesound.org/previews/154/154674_2592500-lq.mp3");
+    static.loop = true;
+
+    // Function to play the next video/gif in the list
+    function playNextVideo() {
+        // Turn off static sound if not background
+        if (currentVideoIndex % 2 == 0) {
+            static.pause();
+            static.currentTime = 0;
+        }
+
+        // Assign next video
+        currentVideoIndex = (currentVideoIndex + 1) % videos.length;
+        var videoGifElement = document.querySelector("#video-gif");
+        videoGifElement.src = videos[currentVideoIndex][0];
+
+        // Clear the existing timer and create a new timer
+        // Timer will automatically play next video after current video's time expires
+        clearTimeout(timerID);
+        timerID = setTimeout(function () {
+            playNextVideo();
+        }, videos[currentVideoIndex][1] * 1000);
+        if (currentVideoIndex % 2 == 0) {
+            static.play();
+            tv_sound.volume = 0.3
+        }
+    }
+
+    var SELECTOR_SCREEN_ELEMENT = '#white-screen';
+    var SELECTOR_SWITCHER_TV = '#on-off';
+
+    var isTurnedOn = false;
+    var timeline;
+
+    function buildTimeline() {
+        timeline = new TimelineMax({
+            paused: true
+        });
+
+        timeline
+            .to(SELECTOR_SCREEN_ELEMENT, .075, {
+                width: '100%',
+                height: '3.5%',
+                ease: Power2.easeOut,
+                onReverseComplete: function () {
+                    document.querySelector('#video-gif').style.display = 'block';
+                }
+            })
+            .to(SELECTOR_SCREEN_ELEMENT, .075, {
+                height: '0%',
+                width: '30%',
+                onStart: function () {
+                    document.querySelector('#video-gif').style.display = 'none';
+                },
+                onComplete: function () {
+                    document.querySelector('.screen').style.display = 'block';
+                }
+            });
+
+        timeline.restart();
+    }
+
+
+    // create an audio element
+    const tv_sound = new Audio("https://cdn.freesound.org/previews/546/546047_12206738-lq.mp3");
+    function toggleSwitcherTV() {
+        if (isTurnedOn) {
+            clearTimeout(timerID);
+            timeline.restart();
+            tv_sound.pause();
+            static.pause();
+            static.currentTime = 0;
+        }
+
+        if (!isTurnedOn) {
+            timeline.reverse();
+            if (currentVideoIndex % 2 == 0) {
+                currentVideoIndex -= 1
+            }
+            playNextVideo();
+            tv_sound.loop = true;
+            tv_sound.play();
+            tv_sound.volume = 0.3
+        }
+        isTurnedOn = !isTurnedOn;
+    }
+
+    document.addEventListener('DOMContentLoaded', buildTimeline)
+    document.querySelector(SELECTOR_SWITCHER_TV).addEventListener('click', function () {
+        toggleSwitcherTV();
+        const sound = new Audio();
+        sound.src = "https://freesound.org/data/previews/485/485486_10145800-lq.mp3"
+        sound.play()
+        sound.volume = 0.3
+    });
+
+</script>
+
+</html>
